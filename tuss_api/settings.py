@@ -15,7 +15,6 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
 
@@ -25,7 +24,7 @@ SECRET_KEY = 'django-insecure-5o!xjji1tv9g=4fmsg!xa4jin2(wi-n5^r=^zn++rf9^&^7@*3
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ["7d42-2804-30c-1b01-8f01-6535-1d9-c1e1-882f.ngrok-free.app", "localhost"]
+ALLOWED_HOSTS = ["*"]
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
@@ -40,10 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'tuss_items',
-    'import_export',
+    # 'import_export',
     'rest_framework',
     'django_elasticsearch_dsl',
-    'django_elasticsearch_dsl_drf'
+    'django_elasticsearch_dsl_drf',
+    'django_filters'
 ]
 
 MIDDLEWARE = [
@@ -77,6 +77,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'tuss_api.wsgi.application'
 
+CORS_PREFLIGHT_MAX_AGE = 86400
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = ["*"]
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https?://localhost(:\d+)",  # localhost with optional port and optional ssl
+]
+CORS_ALLOW_ALL_ORIGINS = True
+
+CORS_ALLOW_HEADERS = []
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
@@ -91,6 +101,13 @@ DATABASES = {
         'PORT': '5432',
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': 'tuss_db'
+#     }
+# }
 
 
 # Password validation
@@ -111,7 +128,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.1/topics/i18n/
 
@@ -122,7 +138,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
@@ -143,10 +158,10 @@ ELASTICSEARCH_DSL = {
     },
 }
 
-
-
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20
 }
 
+TUSS_URL = "https://www.ans.gov.br/arquivos/extras/tiss/Padrao_TISS_Representacao_de_Conceitos_em_Saude_202303.zip"
+TUSS_FOLDER = "Padrao_TISS_Representacao_de_Conceitos_em_Saude_202303"

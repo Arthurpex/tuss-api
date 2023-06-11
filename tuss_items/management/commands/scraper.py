@@ -1,6 +1,9 @@
 import os
 import re
+import shutil
 import tempfile
+import time
+from pprint import pprint
 from typing import List
 from zipfile import ZipFile
 
@@ -25,10 +28,30 @@ config = {
 }
 
 
-def download_and_unzip(url):
+def move_csv_files(output_folder: str = 'tuss_csvs'):
+    root_dir = settings.MEDIA_ROOT
+    output_dir = os.path.join(root_dir, output_folder)
+
+    # Create the output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Walk through the root directory and its subdirectories
+    for subdir, _, files in os.walk(root_dir):
+        for file in files:
+            # Check if the file has a .csv extension
+            if file.endswith('.csv'):
+                file_path = os.path.join(subdir, file)
+                # Move the file to the output directory
+                shutil.move(file_path, os.path.join(output_dir, file))
+                print(f"Moved {file_path} to {output_dir}")
+
+
+def download_and_unzip():
+    url = settings.TUSS_URL
+    tuss_folder = settings.TUSS_FOLDER
     output_dir = os.path.join(settings.MEDIA_ROOT)
 
-    if not "Padrao_TISS_Representacao_de_Conceitos_em_Saude_202303" in os.listdir(settings.MEDIA_ROOT):
+    if not tuss_folder in os.listdir(settings.MEDIA_ROOT):
         print("Downloading...")
         response = requests.get(url)
         if response.status_code != 200:
@@ -106,8 +129,6 @@ def parse_xlsx_to_csv(root_path, config) -> List:
                             # Get the value from the 4th row, first column before creating the DataFrame
                             tab_number = int(sheet_name.split(" ")[1])
 
-                            # TODO aqui tem que distinguir a 64 do resto
-
                             if tab_number > 74:
                                 # table_title = sheet.cell(row=5, column=1).value
                                 csv_file_name = f"{tab_number}.csv"
@@ -142,6 +163,8 @@ def parse_xlsx_to_csv(root_path, config) -> List:
                         print(f"Converted {csv_file_name}")
 
                 workbook.close()
+
+    move_csv_files()
     return converted_files
 
 
@@ -149,10 +172,19 @@ class Command(BaseCommand):
     help = 'Download zip and convert to csv'
 
     def handle(self, *args, **kwargs):
-        tuss_zip_url = "https://www.ans.gov.br/arquivos/extras/tiss/Padrao_TISS_Representacao_de_Conceitos_em_Saude_202303.zip"
+        self.stdout.write(self.style.SUCCESS('Scraper starting...'))
 
-        output_dir = download_and_unzip(tuss_zip_url)
+        # Keep track of the time it took
+        start_time = time.time()
 
-        parse_xlsx_to_csv(output_dir, config)
+        output_dir = download_and_unzip()
+
+        converted_files = parse_xlsx_to_csv(output_dir, config)
+
+        # Print the time it took
+        print("--- %s seconds ---" % (time.time() - start_time))
+        print(len(converted_files), "files converted")
 
         self.stdout.write(self.style.SUCCESS('Successfully converted files'))
+
+        pprint(converted_files)

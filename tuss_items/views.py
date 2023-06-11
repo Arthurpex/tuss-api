@@ -1,189 +1,339 @@
-from django.http import JsonResponse
-from django_elasticsearch_dsl_drf.filter_backends import FilteringFilterBackend, OrderingFilterBackend, \
-    DefaultOrderingFilterBackend, SearchFilterBackend
-from django_elasticsearch_dsl_drf.viewsets import BaseDocumentViewSet, DocumentViewSet
-from elasticsearch import Elasticsearch
-from elasticsearch_dsl import Q, MultiSearch, Search
-from elasticsearch_dsl import connections
+from typing import List
 
-from rest_framework import viewsets, status, views
+from django.core.paginator import Paginator
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import viewsets
+from rest_framework.pagination import PageNumberPagination, CursorPagination
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .documents import MaterialDocument, MedicamentoDocument
-from .models import Medicamento, Material, DiariaTaxa, Procedimento, DemaisTerminologia, Tabela87
-from .serializers import MedicamentoSerializer, MaterialSerializer, DiariaTaxaSerializer, ProcedimentoSerializer, \
-    DemaisTerminologiaSerializer, TabelasSerializer, MaterialDocumentSerializer, MedicamentoDocumentSerializer
+from .models import GrupoEnvio, TabelasDominio, TermoTuss
+from .search import get_search_results, get_suggestions
+from .serializers import (
+    TabelasSerializer,
+    TermoTussSerializer,
+    SingleTermoTussSerializer,
+    GrupoEnvioSerializer,
+)
+from urllib.parse import urlencode, unquote
 
 
-class MedicamentoViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Medicamento.objects.all()
-    serializer_class = MedicamentoSerializer
+def get_search_fields(fields, field_mapping):
+    search_fields = []
+    invalid_fields = []
+    for field in fields:
+        field_exists = field_mapping.get(field)
+        if field_exists:
+            search_fields.append(field_exists)
+        else:
+            invalid_fields.append(field)
+    return search_fields, invalid_fields
 
 
-class MaterialViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Material.objects.all()
-    serializer_class = MaterialSerializer
+def get_filter_tabelas(tabelas, tabelas_allowed):
+    filter_tabelas = []
+    invalid_tabelas = []
+    for tabela in tabelas:
+        if int(tabela) in tabelas_allowed:
+            filter_tabelas.append(tabela)
+        else:
+            invalid_tabelas.append(tabela)
+    return filter_tabelas, invalid_tabelas
 
 
-class DiariaTaxaViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = DiariaTaxa.objects.all()
-    serializer_class = DiariaTaxaSerializer
+def get_paginated_response(request, queryset, size=10):
+    page = request.query_params.get("page", default=1)
+    page = int(page)
+    page_size = size
+
+    start_index = (page - 1) * page_size
+    end_index = start_index + page_size
+    page_data = queryset[start_index:end_index]
+
+    base_url = request.build_absolute_uri().split("?")[0]
+    query_params = request.GET.copy()
+    if end_index < len(queryset):
+        query_params["page"] = page + 1
+        next_url = base_url + "?" + urlencode(query_params)
+    else:
+        next_url = None
+
+    if page > 1:
+        query_params["page"] = page - 1
+        previous_url = base_url + "?" + urlencode(query_params)
+    else:
+        previous_url = None
+
+    return {
+        "count": len(queryset),
+        "next": next_url,
+        "previous": previous_url,
+        "results": page_data,
+    }
+
+def filter_duplicates(results):
+    seen_matches = set()
+    filtered_results = []
+
+    for result in results:
+        match = result['match']
+
+        # If this match hasn't been seen before, keep it and mark it as seen
+        if match not in seen_matches:
+            filtered_results.append(result)
+            seen_matches.add(match)
+
+    return filtered_results
+
+class SearchViewSet(APIView):
+    serializer_class = TermoTussSerializer
+    filterset_fields = ["codigo_tuss"]
+
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get("query", "")
+
+        if not query:
+            return Response({"detail": "query parameter is required"}, status=400)
+
+        tabela_param = unquote(request.GET.get("tabelas", ""))
+        fields_param = unquote(request.GET.get("fields", ""))
+        count = unquote(request.GET.get("count", ""))
+
+        fields = fields_param.split(",") if fields_param else []
+        tabelas = tabela_param.split(",") if tabela_param else []
+
+        field_mapping = {
+            "termo": "termo",
+            "laboratorio": "related_model.laboratorio",
+            "modelo": "related_model.modelo",
+            "fabricante": "related_model.fabricante",
+            "nome_tecnico": "related_model.nome_tecnico",
+            "apresentacao": "related_model.apresentacao",
+            "codigo_tuss": "codigo_tuss",
+            "codigo_anvisa": "related_model.codigo_anvisa",
+        }
+
+        tabelas_allowed = [
+            18,
+            19,
+            20,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            87,
+            90,
+            98,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+        ]
+
+        search_fields, invalid_fields = get_search_fields(fields, field_mapping)
+        filter_tabelas, invalid_tabelas = get_filter_tabelas(tabelas, tabelas_allowed)
+
+        if invalid_fields or invalid_tabelas:
+            error_message = []
+            if invalid_fields:
+                error_message.append(f"Invalid fields: {invalid_fields}")
+            if invalid_tabelas:
+                error_message.append(f"Invalid tabela: {invalid_tabelas}")
+            return Response({"error": ", ".join(error_message)})
+
+        fields = [field_mapping.get(field, field) for field in fields]
+        fields = [field.replace("\n", "") for field in fields]
+        queryset = get_search_results(query, fields, filter_tabelas, count)
+
+        response = get_paginated_response(request, queryset)
+        return Response(response)
 
 
-class ProcedimentoViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Procedimento.objects.all()
-    serializer_class = ProcedimentoSerializer
+class AutoCompleteViewSet(APIView):
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get("query", "")
+
+        if not query:
+            return Response({"detail": "query parameter is required"}, status=400)
+
+        tabela_param = unquote(request.GET.get("tabelas", ""))
+        fields_param = unquote(request.GET.get("fields", ""))
+
+        tabelas_allowed = [
+            18,
+            19,
+            20,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68,
+            69,
+            70,
+            71,
+            72,
+            73,
+            74,
+            87,
+            90,
+            98,
+            75,
+            76,
+            77,
+            78,
+            79,
+            80,
+            81,
+        ]
+
+        fields = fields_param.split(",") if fields_param else []
+        tabelas = tabela_param.split(",") if tabela_param else []
 
 
-class DemaisTerminologiaViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = DemaisTerminologia.objects.all()
-    serializer_class = DemaisTerminologiaSerializer
+        field_mapping = {
+            "termo": "termo",
+            "laboratorio": "related_model.laboratorio",
+            "modelo": "related_model.modelo",
+            "fabricante": "related_model.fabricante",
+            "nome_tecnico": "related_model.nome_tecnico",
+            "apresentacao": "related_model.apresentacao",
+            "codigo_tuss": "codigo_tuss",
+            "codigo_anvisa": "related_model.codigo_anvisa",
+        }
+        search_fields, invalid_fields = get_search_fields(fields, field_mapping)
+        filter_tabelas, invalid_tabelas = get_filter_tabelas(tabelas, tabelas_allowed)
+
+
+        if invalid_fields or invalid_tabelas:
+            error_message = []
+            if invalid_fields:
+                error_message.append(f"Invalid fields: {invalid_fields}")
+            if invalid_tabelas:
+                error_message.append(f"Invalid tabela: {invalid_tabelas}")
+            return Response({"error": ", ".join(error_message)})
+
+        fields = [field_mapping.get(field, field) for field in fields]
+        fields = [field.replace("\n", "") for field in fields]
+
+        queryset = get_suggestions(query, fields, tabelas)
+        queryset = filter_duplicates(queryset)
+
+        response = get_paginated_response(request, queryset, size=30)
+
+        return Response(response)
+
+
+class TermoTussViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = TermoTuss.objects.all()
+
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["tabela", "codigo_tuss"]
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return SingleTermoTussSerializer
+        return TermoTussSerializer
 
 
 class TabelasViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Tabela87.objects.all()
+    queryset = TabelasDominio.objects.all()
     serializer_class = TabelasSerializer
 
 
-# class MedicamentoSearchViewSet(BaseDocumentViewSet):
-#     document = MedicamentoDocument
-#     serializer_class = MedicamentoSearchSerializer
-#     filter_backends = [
-#         CompoundSearchFilterBackend,
-#         OrderingFilterBackend,
-#         FilteringFilterBackend,
-#     ]
-#     search_fields = (
-#         # 'tabela',
-#         'codigo_tuss',
-#         'termo',
-#         'apresentacao',
-#         'laboratorio',
-#         'codigo_anvisa',
-#     )
-#     filter_fields = {
-#         "termo": "termo",
-#         "apresentacao": "apresentacao",
-#         "laboratorio": "laboratorio",
-#         "codigo_anvisa": "codigo_anvisa",
-#     }
-#     ordering_fields = {
-#         "termo": "termo",
-#         "codigo_anvisa": "codigo_anvisa",
-#     }
-#     ordering = ("-termo",)
-#
-#     def get_queryset(self):
-#         queryset = super().get_queryset()
-#         search_query = self.request.query_params.get("q", None)
-#         if search_query is not None:
-#             search = Q(
-#                 "multi_match",
-#                 query=search_query,
-#                 fields=self.search_fields,
-#                 fuzziness="AUTO",
-#             )
-#             queryset = queryset.query(search)
-#         # Set the size parameter to 20 to return 20 results
-#         queryset = queryset[:5]
-#         return queryset
-
-#
-# class SearchView(APIView):
-#     document_models = {
-#         18: DiariaTaxaDocument,
-#         19: MaterialDocument,
-#         20: MedicamentoDocument,
-#         22: ProcedimentoDocument,
-#         59: Tabela59Document,
-#         60: Tabela60Document,
-#         79: Tabela79Document,
-#         81: Tabela81Document,
-#         63: Tabela63Document,
-#         # 64: Tabela64Document,
-#         87: Tabela87Document
-#     }
-#
-#     search_fields = [
-#         'codigo_tuss',
-#         'termo',
-#         'apresentacao',
-#         'laboratorio',
-#         'codigo_anvisa',
-#         # add fields for DiariaTaxaDocument and ProcedimentoDocument
-#     ]
-#
-#     def get(self, request):
-#         search_query = request.query_params.get("q")
-#         tabela = request.query_params.get("tabela")
-#
-#         if not search_query:
-#             return Response({"error": "No search query provided."}, status=status.HTTP_400_BAD_REQUEST)
-#
-#         if tabela:
-#             try:
-#                 tabela = int(tabela)
-#             except ValueError:
-#                 return Response({"error": "Invalid tabela parameter."}, status=status.HTTP_400_BAD_REQUEST)
-#             if tabela not in self.document_models:
-#                 return Response({"error": "Invalid tabela parameter."}, status=status.HTTP_400_BAD_REQUEST)
-#
-#
-#         if tabela:
-#             s = Search(index=self.document_models[tabela])
-#         else:
-#             s = Search(index="*")
-#
-#         # Create a multi-match query to search across all fields.
-#         query = Q("multi_match", query=search_query, fields=self.search_fields)
-#         s = s.query(query)
-#
-#         print(s.to_dict())
-#
-#         # Execute the search
-#         response = s.execute()
-#
-#         # Format the results for the response
-#         results = []
-#         for hit in response:
-#             results.append(hit.to_dict())
-#
-#         return Response({"results": results}, status=status.HTTP_200_OK)
-#
-
-class GeneralSearchView(APIView):
-    document_models = [
-        MedicamentoDocument,
-        MaterialDocument,
-        # ... add your other document models here
-    ]
-
-    def get(self, request):
-        query = request.query_params.get("q", None)
-        if not query:
-            return Response({"error": "No query provided."}, status=status.HTTP_400_BAD_REQUEST)
-
-        connections.create_connection(
-            hosts=['https://localhost'],
-            http_auth=('elastic', 'ZgiunzKO5TqmS3mKWtW+'),
-            scheme="https",
-            port=9200,
-            timeout=20
-        )
-
-        ms = MultiSearch()
-        for Doc in self.document_models:
-            s = Search(index=Doc._index._name).query("multi_match", query=query, fields=["*"])
-            ms = ms.add(s)
-
-        responses = ms.execute()
-
-        results = []
-        for response in responses:
-            for hit in response:
-                result = hit.to_dict()
-                result['_type'] = hit.meta.index  # Include the document type in the result
-                results.append(result)
-
-        return Response(results)
+class GruposViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = GrupoEnvio.objects.all()
+    serializer_class = GrupoEnvioSerializer
