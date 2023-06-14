@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -91,13 +95,16 @@ CORS_ALLOW_HEADERS = []
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
+DATABASE_PASSWORD = os.getenv('DATABASE_PASSWORD')
+DATABASE_USER = os.getenv('DATABASE_USER')
+
 # Hardcoded passwords for local development
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'tuss',
-        'USER': 'gestor_tuss',
-        'PASSWORD': 'Elephant',
+        'USER': DATABASE_USER,
+        'PASSWORD': DATABASE_PASSWORD,
         'HOST': 'localhost',
         'PORT': '5432',
     }
@@ -150,11 +157,14 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+ELASTIC_USER = os.getenv('ELASTIC_USER')
+ELASTIC_PASSWORD = os.getenv('ELASTIC_PASSWORD')
+
 # Hard coded password for local development ...
 ELASTICSEARCH_DSL = {
     'default': {
         'hosts': 'localhost:9200',
-        'http_auth': ('elastic', 'ZgiunzKO5TqmS3mKWtW+'),
+        'http_auth': (ELASTIC_USER, ELASTIC_PASSWORD),
         'use_ssl': True,
         'verify_certs': False,
     },
@@ -165,7 +175,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20
 }
 
-TUSS_URL = "https://www.ans.gov.br/arquivos/extras/tiss/Padrao_TISS_Representacao_de_Conceitos_em_Saude_202303.zip"
+TUSS_URL = os.getenv('TUSS_URL')
 TUSS_FOLDER = "Padrao_TISS_Representacao_de_Conceitos_em_Saude_202303"
 
 TABELAS_ALLOWED = [
@@ -237,6 +247,6 @@ TABELAS_ALLOWED = [
     81,
 ]
 
-ANVISA_URL = "https://consultas.anvisa.gov.br/api/consulta/"
+ANVISA_URL = os.getenv('ANVISA_URL')
 
 # ?count=10&filter%5BnomeProduto%5D=Tylenol&page=1
