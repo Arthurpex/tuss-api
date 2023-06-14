@@ -11,12 +11,14 @@ def get_anvisa_base_data(numeroRegistro):
         "filter[numeroRegistro]": numeroRegistro,
         "page": 1
     })
+    print(settings.ANVISA_URL)
     url = urljoin(settings.ANVISA_URL, f"genericos?{query_params}")
 
     headers = {"Authorization": "Guest"}
 
     try:
         response = requests.get(url, headers=headers, verify=False)
+        print(response.json())
         response.raise_for_status()
     except requests.exceptions.HTTPError as http_err:
         return {"error": f"HTTP error occurred: {http_err}"}
@@ -24,7 +26,10 @@ def get_anvisa_base_data(numeroRegistro):
         return {"error": f"Error occurred: {err}"}
 
     try:
-        return response.json().get('content', [{}])[0].get('processo')
+        data = response.json().get('content', [])
+        if len(data) > 0:
+            return data[0].get('processo')
+        return {"error": "No data found"}
     except JSONDecodeError:
         return {"error": "Error decoding the response"}
 
@@ -49,6 +54,7 @@ def get_anvisa_detail_data(processo):
 
 def get_anvisa_data(numeroRegistro):
     processo = get_anvisa_base_data(numeroRegistro)
+
     if "error" in processo:
         return processo
 

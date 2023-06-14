@@ -1,3 +1,6 @@
+from urllib.parse import urlencode
+
+
 def get_search_fields(fields, field_mapping):
     search_fields = []
     invalid_fields = []

@@ -11,7 +11,7 @@ from tuss_items.models import (
     Procedimento,
     Material,
     TermoTuss,
-    DemaisTerminologia,
+    DemaisTerminologia, UnidadeFederacao, UnidadeMedida, ModeloRemuneracao, TipoDocumento, TabelasDominio, FormaEnvio,
 )
 
 
@@ -240,65 +240,65 @@ def import_large_csv(csv_file_path, model_type, batch_size=1000):
     }
 
     model_config = {
-        # 'medicamento': {
-        #     'model': Medicamento,
-        #     'fields': [
-        #         ('codigo_anvisa', 'REGISTRO ANVISA'),
-        #         ('apresentacao', 'Apresentação'),
-        #         ('laboratorio', 'Laboratório'),
-        #     ],
-        # },
-        # 'diariataxa': {
-        #     'model': DiariaTaxa,
-        #     'fields': [
-        #         ('descricao_detalhada', 'Descrição Detalhada do Termo'),
-        #     ]
-        # },
-        # 'material': {
-        #     'model': Material,
-        #     'fields': [
-        #         ('codigo_anvisa', 'Registro Anvisa'),
-        #         ('modelo', 'Modelo'),
-        #         ('fabricante', 'Fabricante'),
-        #         ('classe_risco', 'Classe de Risco'),
-        #         ('nome_tecnico', 'NOME TÉCNICO'),
-        #     ]
-        # },
+        'medicamento': {
+            'model': Medicamento,
+            'fields': [
+                ('codigo_anvisa', 'REGISTRO ANVISA'),
+                ('apresentacao', 'Apresentação'),
+                ('laboratorio', 'Laboratório'),
+            ],
+        },
+        'diariataxa': {
+            'model': DiariaTaxa,
+            'fields': [
+                ('descricao_detalhada', 'Descrição Detalhada do Termo'),
+            ]
+        },
+        'material': {
+            'model': Material,
+            'fields': [
+                ('codigo_anvisa', 'Registro Anvisa'),
+                ('modelo', 'Modelo'),
+                ('fabricante', 'Fabricante'),
+                ('classe_risco', 'Classe de Risco'),
+                ('nome_tecnico', 'NOME TÉCNICO'),
+            ]
+        },
         "procedimento": {
             "model": Procedimento,
             "fields": [
                 ("descricao_detalhada", "Descrição Detalhada"),
             ],
         },
-        # 'demaisterminologia': {
-        #     'model': DemaisTerminologia,
-        #     'fields': [
-        #     ]
-        # },
-        # 'tabela59': {
-        #     'model': Tabela59,
-        #     'fields': [
-        #         ('sigla', 'Sigla'),
-        #     ]
-        # },
-        # 'tabela60': {
-        #     'model': Tabela60,
-        #     'fields': [
-        #         ('descricao_detalhada', 'Descrição Detalhada'),
-        #     ]
-        # },
-        # 'tabela79': {
-        #     'model': Tabela79,
-        #     'fields': [
-        #         ('descricao_detalhada', 'Descrição Detalhada'),
-        #     ]
-        # },
-        # 'tabela81': {
-        #     'model': Tabela81,
-        #     'fields': [
-        #         ('requer_assinatura', 'Requer assinatura digital na mensagem de envio'),
-        #     ]
-        # },
+        'demaisterminologia': {
+            'model': DemaisTerminologia,
+            'fields': [
+            ]
+        },
+        'tabela59': {
+            'model': UnidadeFederacao,
+            'fields': [
+                ('sigla', 'Sigla'),
+            ]
+        },
+        'tabela60': {
+            'model': UnidadeMedida,
+            'fields': [
+                ('descricao_detalhada', 'Descrição Detalhada'),
+            ]
+        },
+        'tabela79': {
+            'model': ModeloRemuneracao,
+            'fields': [
+                ('descricao_detalhada', 'Descrição Detalhada'),
+            ]
+        },
+        'tabela81': {
+            'model': TipoDocumento,
+            'fields': [
+                ('requer_assinatura', 'Requer assinatura digital na mensagem de envio'),
+            ]
+        },
     }
 
     if model_type not in model_config:
@@ -383,7 +383,7 @@ def import_large_csv_special(csv_file_path, model_type, batch_size=1000):
             ],
         },
         "tabela64": {
-            "model": Tabela64,
+            "model": FormaEnvio,
             "fields": [
                 ("terminologia", "Terminologia"),
                 ("codigo_do_grupo", "Código do grupo"),
@@ -397,7 +397,7 @@ def import_large_csv_special(csv_file_path, model_type, batch_size=1000):
             ],
         },
         "tabela87": {
-            "model": Tabela87,
+            "model": TabelasDominio,
             "fields": [
                 ("codigo_tabela", "Código da Tabela"),
                 ("descricao", "Descrição"),

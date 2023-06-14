@@ -90,7 +90,7 @@ class AutoCompleteViewSet(APIView):
         tabelas = tabela_param.split(",") if tabela_param else []
 
         field_mapping = {
-            "termo": "termo",
+            "termo": "termo.suggest",
             "laboratorio": "related_model.laboratorio",
             "modelo": "related_model.modelo",
             "fabricante": "related_model.fabricante",
@@ -121,6 +121,86 @@ class AutoCompleteViewSet(APIView):
         return Response(response)
 
 
+# class BaseViewSet(APIView):
+#     field_mapping = {}
+#
+#     def get_params(self, request):
+#         query = request.GET.get("query", "")
+#         if not query:
+#             return Response({"detail": "query parameter is required"}, status=400)
+#
+#         tabela_param = unquote(request.GET.get("tabelas", ""))
+#         fields_param = unquote(request.GET.get("fields", ""))
+#
+#         fields = fields_param.split(",") if fields_param else []
+#         tabelas = tabela_param.split(",") if tabela_param else []
+#
+#         tabelas_allowed = settings.TABELAS_ALLOWED
+#
+#         search_fields, invalid_fields = get_search_fields(fields, self.field_mapping)
+#         filter_tabelas, invalid_tabelas = get_filter_tabelas(tabelas, tabelas_allowed)
+#
+#         if invalid_fields or invalid_tabelas:
+#             error_message = []
+#             if invalid_fields:
+#                 error_message.append(f"Invalid fields: {invalid_fields}")
+#             if invalid_tabelas:
+#                 error_message.append(f"Invalid tabela: {invalid_tabelas}")
+#             return Response({"error": ", ".join(error_message)})
+#
+#         fields = [self.field_mapping.get(field, field) for field in fields]
+#         fields = [field.replace("\n", "") for field in fields]
+#
+#         return query, fields, filter_tabelas
+#
+#     def process_query(self, request, process_func, *args, **kwargs):
+#         query, fields, tabelas = self.get_params(request)
+#
+#         queryset = process_func(query, fields, tabelas, *args, **kwargs)
+#         response = get_paginated_response(request, queryset)
+#
+#         return Response(response)
+#
+#
+# class SearchViewSet(BaseViewSet):
+#     serializer_class = TermoTussSerializer
+#     filterset_fields = ["codigo_tuss"]
+#
+#     field_mapping = {
+#         "termo": "termo",
+#         "laboratorio": "related_model.laboratorio",
+#         "modelo": "related_model.modelo",
+#         "fabricante": "related_model.fabricante",
+#         "nome_tecnico": "related_model.nome_tecnico",
+#         "apresentacao": "related_model.apresentacao",
+#         "codigo_tuss": "codigo_tuss",
+#         "codigo_anvisa": "related_model.codigo_anvisa",
+#     }
+#
+#     def get(self, request, *args, **kwargs):
+#         return self.process_query(request, get_search_results)
+#
+#
+# class AutoCompleteViewSet(BaseViewSet):
+#     field_mapping = {
+#         "termo": "termo.suggest",
+#         "laboratorio": "related_model.laboratorio",
+#         "modelo": "related_model.modelo",
+#         "fabricante": "related_model.fabricante",
+#         "nome_tecnico": "related_model.nome_tecnico",
+#         "apresentacao": "related_model.apresentacao",
+#         "codigo_tuss": "codigo_tuss",
+#         "codigo_anvisa": "related_model.codigo_anvisa",
+#     }
+#
+#     def get(self, request, *args, **kwargs):
+#         response = self.process_query(request, get_suggestions)
+#         if 'results' in response.data:
+#             response.data['results'] = filter_duplicates(response.data['results'])
+#         return response
+
+
+
 class TermoTussViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = TermoTuss.objects.all()
 
@@ -148,21 +228,19 @@ class GruposViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = GrupoEnvioSerializer
 
 
-TABELA_MEDICAMENTO = 20
-TABELA_MATERIAL = 19
-
-
-def get_anvisa_data_from_termo(termo):
-    if termo.tabela == TABELA_MEDICAMENTO:
-        return get_anvisa_data(termo.medicamento.codigo_anvisa)
-    elif termo.tabela == TABELA_MATERIAL:
-        return get_anvisa_data(termo.material.codigo_anvisa)
-    else:
-        return {"result": "Termo não possui atributos da Anvisa"}
-
-
 @api_view(['GET'])
 def get_anvisa_info(request, *args, **kwargs):
+    TABELA_MEDICAMENTO = 20
+    TABELA_MATERIAL = 19
+
+    def get_anvisa_data_from_termo(termo):
+        if termo.tabela == TABELA_MEDICAMENTO:
+            return get_anvisa_data(termo.medicamento.codigo_anvisa)
+        elif termo.tabela == TABELA_MATERIAL:
+            return get_anvisa_data(termo.material.codigo_anvisa)
+        else:
+            return {"error": "Termo não encontrado"}
+
     termo = get_object_or_404(TermoTuss, tabela__in=[TABELA_MEDICAMENTO, TABELA_MATERIAL], id=kwargs.get('id'))
 
     data = get_anvisa_data_from_termo(termo)
