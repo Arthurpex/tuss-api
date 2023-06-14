@@ -7,10 +7,20 @@ from elasticsearch_dsl.connections import connections
 from django.conf import settings
 
 from tuss_items.documents import TermoTussDocument, ExtraFieldsDocument
-from tuss_items.models import Procedimento, DiariaTaxa, DemaisTerminologia, Material, Medicamento, TermoTuss, \
-    UnidadeFederacao, UnidadeMedida, ModeloRemuneracao, TipoDocumento
+from tuss_items.models import (
+    Procedimento,
+    DiariaTaxa,
+    DemaisTerminologia,
+    Material,
+    Medicamento,
+    TermoTuss,
+    UnidadeFederacao,
+    UnidadeMedida,
+    ModeloRemuneracao,
+    TipoDocumento,
+)
 
-connections.create_connection(**settings.ELASTICSEARCH_DSL['default'])
+connections.create_connection(**settings.ELASTICSEARCH_DSL["default"])
 
 
 def try_parse_int(value):
@@ -24,8 +34,10 @@ def try_parse_int(value):
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
+        # TermoTussDocument.init()
 
         tabelas_not_demais = [18, 22, 59, 60, 79, 81, 63, 64, 87, 19, 20]
+
         demais_terminologias = TermoTuss.objects.exclude(tabela__in=tabelas_not_demais)
 
         diaria_taxas = TermoTuss.objects.filter(tabela=18)
@@ -35,33 +47,27 @@ class Command(BaseCommand):
         procedimentos = TermoTuss.objects.filter(tabela=22)
         medicamentos = TermoTuss.objects.filter(tabela=20)
 
-        time_med = self.index_model(medicamentos, 'Medicamento')
-        time_dia = self.index_model(diaria_taxas, 'DiariaTaxa')
-        time_proc = self.index_model(procedimentos, 'Procedimento')
-        time_demais = self.index_model(demais_terminologias, 'DemaisTerminologia')
+        self.index_model(medicamentos, "Medicamento")
+        self.index_model(diaria_taxas, "DiariaTaxa")
+        self.index_model(procedimentos, "Procedimento")
+        self.index_model(demais_terminologias, "DemaisTerminologia")
 
-        # time_mat = self.index_model(materiais, 'Material')
-        #
-        print(f"Time taken to index DiariaTaxas: {time_dia} seconds")
-        print(f"Time taken to index Procedimentos: {time_proc} seconds")
-        print(f"Time taken to index Medicamentos: {time_med} seconds")
-        print(f"Time taken to index Demais terminologias: {time_demais} seconds")
-        # print(f"Time taken to index Materiais: {time_mat} seconds")
+        self.index_model(materiais, "Material")
 
     def index_model(self, queryset, label):
-
         TermoTussDocument.init()
 
-        related_models = [Material,
-                          Medicamento,
-                          Procedimento,
-                          DiariaTaxa,
-                          DemaisTerminologia,
-                          UnidadeFederacao,
-                          UnidadeMedida,
-                          ModeloRemuneracao,
-                          TipoDocumento
-                          ]
+        related_models = [
+            Material,
+            Medicamento,
+            Procedimento,
+            DiariaTaxa,
+            DemaisTerminologia,
+            UnidadeFederacao,
+            UnidadeMedida,
+            ModeloRemuneracao,
+            TipoDocumento,
+        ]
 
         start_time = time.time()
 
@@ -83,23 +89,29 @@ class Command(BaseCommand):
             # iterate over each related model
             for related_model_class in related_models:
                 try:
-                    related_model = related_model_class.objects.get(termo_tuss=termo_tuss)
+                    related_model = related_model_class.objects.get(
+                        termo_tuss=termo_tuss
+                    )
                     break
                 except related_model_class.DoesNotExist:
                     pass
 
             if related_model is not None:
-                codigo_anvisa = try_parse_int(getattr(related_model, 'codigo_anvisa', None))
+                codigo_anvisa = try_parse_int(
+                    getattr(related_model, "codigo_anvisa", None)
+                )
 
                 related_model_document = ExtraFieldsDocument(
-                    modelo=getattr(related_model, 'modelo', None),
-                    fabricante=getattr(related_model, 'fabricante', None),
+                    modelo=getattr(related_model, "modelo", None),
+                    fabricante=getattr(related_model, "fabricante", None),
                     codigo_anvisa=codigo_anvisa,
-                    nome_tecnico=getattr(related_model, 'nome_tecnico', None),
-                    apresentacao=getattr(related_model, 'apresentacao', None),
-                    laboratorio=getattr(related_model, 'laboratorio', None),
-                    descricao_detalhada=getattr(related_model, 'descricao_detalhada', None),
-                    sigla=getattr(related_model, 'sigla', None),
+                    nome_tecnico=getattr(related_model, "nome_tecnico", None),
+                    apresentacao=getattr(related_model, "apresentacao", None),
+                    laboratorio=getattr(related_model, "laboratorio", None),
+                    descricao_detalhada=getattr(
+                        related_model, "descricao_detalhada", None
+                    ),
+                    sigla=getattr(related_model, "sigla", None),
                 )
 
                 termo_tuss_document.related_model = related_model_document

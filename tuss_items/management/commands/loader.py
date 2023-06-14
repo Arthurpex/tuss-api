@@ -6,8 +6,20 @@ from django.conf import settings
 from django.core.management import BaseCommand
 
 from tuss_items.utils.importer import import_large_csv, import_large_csv_special
-from tuss_items.models import Material, DiariaTaxa, Procedimento, Medicamento, DemaisTerminologia, UnidadeFederacao, \
-    UnidadeMedida, ModeloRemuneracao, GrupoEnvio, TipoDocumento, FormaEnvio, TabelasDominio
+from tuss_items.models import (
+    Material,
+    DiariaTaxa,
+    Procedimento,
+    Medicamento,
+    DemaisTerminologia,
+    UnidadeFederacao,
+    UnidadeMedida,
+    ModeloRemuneracao,
+    GrupoEnvio,
+    TipoDocumento,
+    FormaEnvio,
+    TabelasDominio,
+)
 
 
 def get_file_to_model_dict() -> dict:
@@ -16,7 +28,7 @@ def get_file_to_model_dict() -> dict:
     file_to_model = {}
 
     for file_name in file_names:
-        match = re.search(r'\btab (\d{2})\b', file_name.lower())
+        match = re.search(r"\btab (\d{2})\b", file_name.lower())
 
         if match:
             tab_number = int(match.group(1))
@@ -58,10 +70,10 @@ def get_file_to_model_dict() -> dict:
 
 
 class Command(BaseCommand):
-    help = 'Load csv files into database'
+    help = "Load csv files into database"
 
     def handle(self, *args, **kwargs):
-        self.stdout.write(self.style.SUCCESS('Loading TUSS files into database...'))
+        self.stdout.write(self.style.SUCCESS("Loading TUSS files into database..."))
 
         # keep track of the time it took
 
@@ -70,10 +82,13 @@ class Command(BaseCommand):
         file_to_model_map = get_file_to_model_dict()
 
         for file_name, model in file_to_model_map.items():
-            import_large_csv(settings.MEDIA_ROOT + "/tuss_csvs/" + file_name, model_type=model._meta.model_name)
+            import_large_csv(
+                settings.MEDIA_ROOT + "/tuss_csvs/" + file_name,
+                model_type=model._meta.model_name,
+            )
             # import_large_csv_special(settings.MEDIA_ROOT + "/tuss_csvs/" + file_name, model_type=model._meta.model_name)
 
         # print the time it took
         print("--- %s seconds ---" % (time.time() - start_time))
 
-        self.stdout.write(self.style.SUCCESS('Files loaded successfully'))
+        self.stdout.write(self.style.SUCCESS("Files loaded successfully"))

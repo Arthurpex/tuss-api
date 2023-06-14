@@ -91,6 +91,7 @@ CORS_ALLOW_HEADERS = []
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
+# Hardcoded passwords for local development
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -149,6 +150,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Hard coded password for local development ...
 ELASTICSEARCH_DSL = {
     'default': {
         'hosts': 'localhost:9200',
@@ -165,3 +167,72 @@ REST_FRAMEWORK = {
 
 TUSS_URL = "https://www.ans.gov.br/arquivos/extras/tiss/Padrao_TISS_Representacao_de_Conceitos_em_Saude_202303.zip"
 TUSS_FOLDER = "Padrao_TISS_Representacao_de_Conceitos_em_Saude_202303"
+
+TABELAS_ALLOWED = [
+    18,
+    19,
+    20,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39,
+    40,
+    41,
+    42,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55,
+    56,
+    57,
+    58,
+    59,
+    60,
+    61,
+    62,
+    63,
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71,
+    72,
+    73,
+    74,
+    87,
+    90,
+    98,
+    75,
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+]

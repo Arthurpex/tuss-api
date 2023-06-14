@@ -11,7 +11,7 @@ class TermoTuss(models.Model):
     dt_implantacao = models.DateTimeField(null=True)
 
     class Meta:
-        unique_together = ('codigo_tuss', 'tabela')
+        unique_together = ("codigo_tuss", "tabela")
 
 
 class Medicamento(models.Model):
@@ -97,4 +97,3 @@ class TabelasDominio(models.Model):
     dt_inicio_vigencia = models.DateTimeField(null=False)
     dt_fim_vigencia = models.DateTimeField(null=True)
     dt_implantacao = models.DateTimeField(null=True)
-

@@ -10,7 +10,7 @@ from tuss_items.documents import TermoTussDocument, ExtraFieldsDocument
 
 class Command(BaseCommand):
     def handle(self, *args, **options):
-        connections.create_connection(**settings.ELASTICSEARCH_DSL['default'])
+        connections.create_connection(**settings.ELASTICSEARCH_DSL["default"])
 
         es = connections.get_connection()
-        es.indices.delete(index='termo_tuss', ignore=[400, 404])
+        es.indices.delete(index="termo_tuss", ignore=[400, 404])
