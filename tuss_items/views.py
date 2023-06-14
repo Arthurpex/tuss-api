@@ -1,6 +1,8 @@
 from django.conf import settings
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, pagination
+from rest_framework.decorators import api_view
+from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -14,6 +16,7 @@ from .serializers import (
 )
 from urllib.parse import unquote
 
+from .utils.anvisa import get_anvisa_data
 from .utils.utils import (
     get_search_fields,
     get_filter_tabelas,
@@ -143,3 +146,29 @@ class TabelasViewSet(viewsets.ReadOnlyModelViewSet):
 class GruposViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = GrupoEnvio.objects.all()
     serializer_class = GrupoEnvioSerializer
+
+
+TABELA_MEDICAMENTO = 20
+TABELA_MATERIAL = 19
+
+
+def get_anvisa_data_from_termo(termo):
+    if termo.tabela == TABELA_MEDICAMENTO:
+        return get_anvisa_data(termo.medicamento.codigo_anvisa)
+    elif termo.tabela == TABELA_MATERIAL:
+        return get_anvisa_data(termo.material.codigo_anvisa)
+    else:
+        return {"result": "Termo não possui atributos da Anvisa"}
+
+
+@api_view(['GET'])
+def get_anvisa_info(request, *args, **kwargs):
+    termo = get_object_or_404(TermoTuss, tabela__in=[TABELA_MEDICAMENTO, TABELA_MATERIAL], id=kwargs.get('id'))
+
+    data = get_anvisa_data_from_termo(termo)
+    if "error" in data:
+        status = 500
+    else:
+        status = 200
+
+    return Response(data, status=status)

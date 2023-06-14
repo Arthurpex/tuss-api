@@ -2,7 +2,6 @@ from django_elasticsearch_dsl_drf.serializers import DocumentSerializer
 
 from .documents import TermoTussDocument
 
-# from .documents import MedicamentoDocument, MaterialDocument
 from .models import (
     Medicamento,
     Material,
@@ -21,22 +20,7 @@ from .models import (
 
 from rest_framework import serializers
 
-
-class TermoTussDocumentSerializer(DocumentSerializer):
-    class Meta(object):
-        """Meta options."""
-
-        # Specify the correspondent document class
-        document = TermoTussDocument
-        # Specify the fields that you want to expose
-        fields = (
-            "codigo_tuss",
-            "tabela",
-            "termo",
-            "dt_inicio_vigencia",
-            "dt_fim_vigencia",
-            "dt_implantacao",
-        )
+from .utils.anvisa import get_anvisa_data
 
 
 class TabelasSerializer(serializers.ModelSerializer):
@@ -135,7 +119,7 @@ class SingleTermoTussSerializer(serializers.ModelSerializer):
     extra_fields = serializers.SerializerMethodField()
     forma_de_envio = serializers.SerializerMethodField()
     grupo = serializers.SerializerMethodField()
-    anvisa_fields = serializers.SerializerMethodField()
+
 
     class Meta:
         model = TermoTuss
@@ -150,7 +134,6 @@ class SingleTermoTussSerializer(serializers.ModelSerializer):
             "forma_de_envio",
             "grupo",
             "extra_fields",
-            "anvisa_fields",
         ]
 
     def get_extra_fields(self, obj):
@@ -191,20 +174,4 @@ class SingleTermoTussSerializer(serializers.ModelSerializer):
         # Return the forma_de_envio attribute of the Tabela64 instance, if it exists
         return tabela64.codigo_do_grupo if tabela64 else None
 
-    def get_anvisa_fields(self, obj):
-        return None
 
-
-# class TermoTussSerializer2(serializers.Serializer):
-#     codigo_tuss = serializers.CharField()
-#     tabela = serializers.CharField()
-#     termo = serializers.CharField()
-#     dt_inicio_vigencia = serializers.DateField()
-#     dt_fim_vigencia = serializers.DateField()
-#     dt_implantacao = serializers.DateField()
-#     extra_fields = serializers.DictField()
-#
-#     def to_representation(self, instance):
-#         representation = super().to_representation(instance)
-#         representation['extra_fields'] = instance['related_model']
-#         return representation

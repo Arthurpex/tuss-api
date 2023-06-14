@@ -12,4 +12,5 @@ urlpatterns = [
     path("", include(router.urls)),
     path("search/", views.SearchViewSet.as_view(), name="search"),
     path("autocomplete/", views.AutoCompleteViewSet.as_view(), name="autocomplete"),
+    path("anvisa/<int:id>", views.get_anvisa_info, name="anvisa"),
 ]

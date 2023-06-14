@@ -236,3 +236,7 @@ TABELAS_ALLOWED = [
     80,
     81,
 ]
+
+ANVISA_URL = "https://consultas.anvisa.gov.br/api/consulta/"
+
+# ?count=10&filter%5BnomeProduto%5D=Tylenol&page=1
