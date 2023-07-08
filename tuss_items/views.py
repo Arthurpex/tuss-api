@@ -68,6 +68,7 @@ class SearchViewSet(APIView):
 
         fields = [field_mapping.get(field, field) for field in fields]
         fields = [field.replace("\n", "") for field in fields]
+
         queryset = get_search_results(query, fields, filter_tabelas, count)
 
         response = get_paginated_response(request, queryset)
@@ -230,23 +231,16 @@ class GruposViewSet(viewsets.ReadOnlyModelViewSet):
 
 @api_view(['GET'])
 def get_anvisa_info(request, *args, **kwargs):
-    TABELA_MEDICAMENTO = 20
-    TABELA_MATERIAL = 19
+    termo = get_object_or_404(TermoTuss, tabela__in=[19, 20], id=kwargs.get('id'))  # 19 - MATERIAL, 20 - MEDICAMENTO
 
-    def get_anvisa_data_from_termo(termo):
-        if termo.tabela == TABELA_MEDICAMENTO:
-            return get_anvisa_data(termo.medicamento.codigo_anvisa)
-        elif termo.tabela == TABELA_MATERIAL:
-            return get_anvisa_data(termo.material.codigo_anvisa)
-        else:
-            return {"error": "Termo não encontrado"}
+    if termo.tabela not in (19, 20):
+        return Response({"error": "Termo não encontrado", "status": 404})
 
-    termo = get_object_or_404(TermoTuss, tabela__in=[TABELA_MEDICAMENTO, TABELA_MATERIAL], id=kwargs.get('id'))
+    tipo = 'medicamento' if termo.tabela == 20 else 'material'
+    codigo_anvisa = getattr(termo, tipo).codigo_anvisa
 
-    data = get_anvisa_data_from_termo(termo)
-    if "error" in data:
-        status = 500
-    else:
-        status = 200
+    data = get_anvisa_data(codigo_anvisa)
 
-    return Response(data, status=status)
+    result = data.get('result', [])
+
+    return Response(result, status=data.get('status'))

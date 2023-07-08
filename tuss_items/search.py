@@ -62,10 +62,20 @@ def get_search_results(query, fields: List[str], tabelas: List, count):
     s = TermoTussDocument.search().query(combined_query).extra(size=count)
 
     s = s.highlight(*fields, fragment_size=0)
+    print("tabelas -> ", tabelas)
 
     if tabelas:
-        tabela_queries = [Q("term", **{"tabela": tabela}) for tabela in tabelas]
-        s = s.query("bool", filter=tabela_queries)
+        if '99' in tabelas:
+            # 99 means all tabelas except 18, 19, 20 and 22.
+            # Other numbers in 'tabelas' should not be excluded.
+            excluded_tables = {'18', '19', '20', '22'}.difference(tabelas)
+            excluded_queries = [Q("term", **{"tabela": tabela}) for tabela in excluded_tables]
+            s = s.query("bool", must_not=excluded_queries)
+        else:
+            # If 99 is not present, include only the tables specified in 'tabelas'.
+            tabela_queries = [Q("term", **{"tabela": tabela}) for tabela in tabelas]
+            print("tabela_queries -> ", tabela_queries)
+            s = s.query("bool", should=tabela_queries)
 
     response = s.execute()
 
@@ -97,10 +107,7 @@ def get_search_results(query, fields: List[str], tabelas: List, count):
             "match_fields": match_fields,
         }
         queryset.append(item)
-
     return queryset
-
-
 
 
 def get_suggestions(query, fields, tabelas):
@@ -115,9 +122,9 @@ def get_suggestions(query, fields, tabelas):
     ]
 
     if (
-        fields == ["codigo_tuss"]
-        or fields == ["related_model.codigo_anvisa"]
-        or fields == ["codigo_tuss", "related_model.codigo_anvisa"]
+            fields == ["codigo_tuss"]
+            or fields == ["related_model.codigo_anvisa"]
+            or fields == ["codigo_tuss", "related_model.codigo_anvisa"]
     ):
         return []
 
@@ -146,9 +153,22 @@ def get_suggestions(query, fields, tabelas):
 
     s = s.extra(size=10)
 
+    # if tabelas:
+    #     tabela_queries = [Q("term", tabela=tabela) for tabela in tabelas]
+    #     s = s.query("bool", should=tabela_queries, minimum_should_match=1)
+
     if tabelas:
-        tabela_queries = [Q("term", tabela=tabela) for tabela in tabelas]
-        s = s.query("bool", should=tabela_queries, minimum_should_match=1)
+        if '99' in tabelas:
+            # 99 means all tabelas except 18, 19, 20 and 22.
+            # Other numbers in 'tabelas' should not be excluded.
+            excluded_tables = {'18', '19', '20', '22'}.difference(tabelas)
+            excluded_queries = [Q("term", **{"tabela": tabela}) for tabela in excluded_tables]
+            s = s.query("bool", must_not=excluded_queries)
+        else:
+            # If 99 is not present, include only the tables specified in 'tabelas'.
+            tabela_queries = [Q("term", **{"tabela": tabela}) for tabela in tabelas]
+            s = s.query("bool", should=tabela_queries)
+
 
     response = s.execute()
 

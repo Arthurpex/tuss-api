@@ -48,13 +48,13 @@ class DemaisTerminologia(models.Model):
     termo_tuss = models.OneToOneField(TermoTuss, on_delete=models.CASCADE)
 
 
-class UnidadeMedida(models.Model):
+class UnidadeFederacao(models.Model):
     termo_tuss = models.OneToOneField(TermoTuss, on_delete=models.CASCADE)
 
     sigla = models.CharField(null=False, max_length=256)
 
 
-class UnidadeFederacao(models.Model):
+class UnidadeMedida(models.Model):
     termo_tuss = models.OneToOneField(TermoTuss, on_delete=models.CASCADE)
 
     descricao_detalhada = models.TextField(null=True)

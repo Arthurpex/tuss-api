@@ -1,3 +1,5 @@
+from pprint import pprint
+
 from django_elasticsearch_dsl_drf.serializers import DocumentSerializer
 
 from .documents import TermoTussDocument
@@ -146,13 +148,14 @@ class SingleTermoTussSerializer(serializers.ModelSerializer):
         elif obj.tabela == 22:
             return ProcedimentoSerializer(obj.procedimento).data
         elif obj.tabela == 59:
-            return UnidadeFederacaoSerializer(obj.tabela59).data
+            print(dir(obj))
+            return UnidadeFederacaoSerializer(obj.unidadefederacao).data
         elif obj.tabela == 60:
-            return UnidadeMedidaSerializer(obj.tabela60).data
+            return UnidadeMedidaSerializer(obj.unidademedida).data
         elif obj.tabela == 79:
-            return ModeloRemuneracaoSerializer(obj.tabela79).data
+            return ModeloRemuneracaoSerializer(obj.modeloremuneracao).data
         elif obj.tabela == 81:
-            return TipoDocumentoSerializer(obj.tabela81).data
+            return TipoDocumentoSerializer(obj.tipodocumento).data
         else:
             return None
 

@@ -36,23 +36,25 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         # TermoTussDocument.init()
 
-        tabelas_not_demais = [18, 22, 59, 60, 79, 81, 63, 64, 87, 19, 20]
+        # tabelas_not_demais = [18, 22, 59, 60, 79, 81, 63, 64, 87, 19, 20]
+        #
+        # demais_terminologias = TermoTuss.objects.exclude(tabela__in=tabelas_not_demais)
+        #
+        # diaria_taxas = TermoTuss.objects.filter(tabela=18)
+        #
+        # materiais = TermoTuss.objects.filter(tabela=19)
+        #
+        # procedimentos = TermoTuss.objects.filter(tabela=22)
+        # medicamentos = TermoTuss.objects.filter(tabela=20)
 
-        demais_terminologias = TermoTuss.objects.exclude(tabela__in=tabelas_not_demais)
+        tres_tabela = TermoTuss.objects.filter(tabela__in=[59, 60, 79])
 
-        diaria_taxas = TermoTuss.objects.filter(tabela=18)
-
-        materiais = TermoTuss.objects.filter(tabela=19)
-
-        procedimentos = TermoTuss.objects.filter(tabela=22)
-        medicamentos = TermoTuss.objects.filter(tabela=20)
-
-        self.index_model(medicamentos, "Medicamento")
-        self.index_model(diaria_taxas, "DiariaTaxa")
-        self.index_model(procedimentos, "Procedimento")
-        self.index_model(demais_terminologias, "DemaisTerminologia")
-
-        self.index_model(materiais, "Material")
+        # self.index_model(medicamentos, "Medicamento")
+        # self.index_model(diaria_taxas, "DiariaTaxa")
+        # self.index_model(procedimentos, "Procedimento")
+        # self.index_model(demais_terminologias, "DemaisTerminologia")
+        #
+        # self.index_model(materiais, "Material")
 
     def index_model(self, queryset, label):
         TermoTussDocument.init()

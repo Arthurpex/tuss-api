@@ -16,6 +16,8 @@ def get_search_fields(fields, field_mapping):
 def get_filter_tabelas(tabelas, tabelas_allowed):
     filter_tabelas = []
     invalid_tabelas = []
+
+
     for tabela in tabelas:
         if int(tabela) in tabelas_allowed:
             filter_tabelas.append(tabela)

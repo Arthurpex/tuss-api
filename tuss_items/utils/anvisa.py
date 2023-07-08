@@ -1,4 +1,3 @@
-from json import JSONDecodeError
 from urllib.parse import urljoin, urlencode
 
 import requests
@@ -11,51 +10,35 @@ def get_anvisa_base_data(numeroRegistro):
         "filter[numeroRegistro]": numeroRegistro,
         "page": 1
     })
-    print(settings.ANVISA_URL)
     url = urljoin(settings.ANVISA_URL, f"genericos?{query_params}")
-
     headers = {"Authorization": "Guest"}
 
-    try:
-        response = requests.get(url, headers=headers, verify=False)
-        print(response.json())
-        response.raise_for_status()
-    except requests.exceptions.HTTPError as http_err:
-        return {"error": f"HTTP error occurred: {http_err}"}
-    except requests.exceptions.RequestException as err:
-        return {"error": f"Error occurred: {err}"}
+    response = requests.get(url, headers=headers, verify=False)
+    response.raise_for_status()
 
-    try:
-        data = response.json().get('content', [])
-        if len(data) > 0:
-            return data[0].get('processo')
-        return {"error": "No data found"}
-    except JSONDecodeError:
-        return {"error": "Error decoding the response"}
+    data = response.json().get('content', [])
+    return data[0].get('processo') if len(data) > 0 else None
 
 
 def get_anvisa_detail_data(processo):
     url = urljoin(settings.ANVISA_URL, f"saude/{processo}")
     headers = {"Authorization": "Guest"}
 
-    try:
-        detail_response = requests.get(url, headers=headers, verify=False)
-        detail_response.raise_for_status()
-    except requests.exceptions.HTTPError as http_err:
-        return {"error": f"HTTP error occurred: {http_err}"}
-    except requests.exceptions.RequestException as err:
-        return {"error": f"Error occurred: {err}"}
+    detail_response = requests.get(url, headers=headers, verify=False)
+    detail_response.raise_for_status()
 
-    try:
-        return detail_response.json()
-    except JSONDecodeError:
-        return {"error": "Error decoding the response"}
+    return detail_response.json()
 
 
 def get_anvisa_data(numeroRegistro):
-    processo = get_anvisa_base_data(numeroRegistro)
-
-    if "error" in processo:
-        return processo
-
-    return get_anvisa_detail_data(processo)
+    try:
+        processo = get_anvisa_base_data(numeroRegistro)
+        print(processo)
+        if not processo:
+            return {"error": "No data found", "status": 404}  # No Content
+        detail_data = get_anvisa_detail_data(processo)
+        return {"result": detail_data, "status": 200}  # OK
+    except requests.exceptions.HTTPError as http_err:
+        return {"error": f"HTTP error occurred: {http_err}", "status": http_err.response.status_code}
+    except requests.exceptions.RequestException as err:
+        return {"error": f"Error occurred: {err}", "status": 500}  # Internal Server Error

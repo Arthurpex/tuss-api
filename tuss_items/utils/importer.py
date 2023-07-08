@@ -240,65 +240,65 @@ def import_large_csv(csv_file_path, model_type, batch_size=1000):
     }
 
     model_config = {
-        'medicamento': {
-            'model': Medicamento,
-            'fields': [
-                ('codigo_anvisa', 'REGISTRO ANVISA'),
-                ('apresentacao', 'Apresentação'),
-                ('laboratorio', 'Laboratório'),
-            ],
-        },
-        'diariataxa': {
-            'model': DiariaTaxa,
-            'fields': [
-                ('descricao_detalhada', 'Descrição Detalhada do Termo'),
-            ]
-        },
-        'material': {
-            'model': Material,
-            'fields': [
-                ('codigo_anvisa', 'Registro Anvisa'),
-                ('modelo', 'Modelo'),
-                ('fabricante', 'Fabricante'),
-                ('classe_risco', 'Classe de Risco'),
-                ('nome_tecnico', 'NOME TÉCNICO'),
-            ]
-        },
-        "procedimento": {
-            "model": Procedimento,
-            "fields": [
-                ("descricao_detalhada", "Descrição Detalhada"),
-            ],
-        },
-        'demaisterminologia': {
-            'model': DemaisTerminologia,
-            'fields': [
-            ]
-        },
-        'tabela59': {
+        # 'medicamento': {
+        #     'model': Medicamento,
+        #     'fields': [
+        #         ('codigo_anvisa', 'REGISTRO ANVISA'),
+        #         ('apresentacao', 'Apresentação'),
+        #         ('laboratorio', 'Laboratório'),
+        #     ],
+        # },
+        # 'diariataxa': {
+        #     'model': DiariaTaxa,
+        #     'fields': [
+        #         ('descricao_detalhada', 'Descrição Detalhada do Termo'),
+        #     ]
+        # },
+        # 'material': {
+        #     'model': Material,
+        #     'fields': [
+        #         ('codigo_anvisa', 'Registro Anvisa'),
+        #         ('modelo', 'Modelo'),
+        #         ('fabricante', 'Fabricante'),
+        #         ('classe_risco', 'Classe de Risco'),
+        #         ('nome_tecnico', 'NOME TÉCNICO'),
+        #     ]
+        # },
+        # "procedimento": {
+        #     "model": Procedimento,
+        #     "fields": [
+        #         ("descricao_detalhada", "Descrição Detalhada"),
+        #     ],
+        # },
+        # 'demaisterminologia': {
+        #     'model': DemaisTerminologia,
+        #     'fields': [
+        #     ]
+        # },
+        'unidadefederacao': {
             'model': UnidadeFederacao,
             'fields': [
                 ('sigla', 'Sigla'),
             ]
         },
-        'tabela60': {
+        'unidademedida': {
             'model': UnidadeMedida,
             'fields': [
                 ('descricao_detalhada', 'Descrição Detalhada'),
             ]
         },
-        'tabela79': {
+        'modeloremuneracao': {
             'model': ModeloRemuneracao,
             'fields': [
                 ('descricao_detalhada', 'Descrição Detalhada'),
             ]
         },
-        'tabela81': {
-            'model': TipoDocumento,
-            'fields': [
-                ('requer_assinatura', 'Requer assinatura digital na mensagem de envio'),
-            ]
-        },
+        # 'tabela81': {
+        #     'model': TipoDocumento,
+        #     'fields': [
+        #         ('requer_assinatura', 'Requer assinatura digital na mensagem de envio'),
+        #     ]
+        # },
     }
 
     if model_type not in model_config:

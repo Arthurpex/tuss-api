@@ -1,6 +1,7 @@
 import os
 import re
 import time
+from pprint import pprint
 
 from django.conf import settings
 from django.core.management import BaseCommand
@@ -81,12 +82,13 @@ class Command(BaseCommand):
 
         file_to_model_map = get_file_to_model_dict()
 
+        # pprint(file_to_model_map)
+
         for file_name, model in file_to_model_map.items():
             import_large_csv(
                 settings.MEDIA_ROOT + "/tuss_csvs/" + file_name,
                 model_type=model._meta.model_name,
             )
-            # import_large_csv_special(settings.MEDIA_ROOT + "/tuss_csvs/" + file_name, model_type=model._meta.model_name)
 
         # print the time it took
         print("--- %s seconds ---" % (time.time() - start_time))
